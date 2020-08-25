@@ -1,80 +1,103 @@
 const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcrypt');
+const axios = require('axios');
 const UserSModel = require('../Models/UsersModel');
 const AWS = require('aws-sdk');
 const dynamoClient = new AWS.DynamoDB.DocumentClient();
 
 
-//Get one user by id
-router.get('/users/:id',(req,res)=>{
-    const {id} = req.params;
-    UserSModel.findById(id,(err,userSaved)=>{
-        if(err){
-            return res.json({ok:false,message:'wrong id'});
-        }
-        res.json({ok:true,userSaved});
-    });
-});
-
-//Get one user by email and password
-router.get('/loggin',(req,res)=>{
-    const {email,password} = req.body;
+//Create new user by email and password manually
+router.post('/signup-users',async (req,res)=>{
+    const {email,name,username,password} = req.body;
     const tableName = 'users';
-
-    const params = {
+    
+    //-------------verify if email is already in database
+    const paramsGet = {
         TableName:tableName,
         Key:{
             "email":email
         }
     }
-
-    dynamoClient.get(params,async (err,data)=>{
+    dynamoClient.get(paramsGet,async (err,data)=>{
         if(err) return res.json({ok:false});
         const {Item} = data;
 
-        if(!Item) return res.json({ok:false,message:'wrong data'}); //wrong email
-        
-        const match = await bcrypt.compare(password,Item.password);
-        
-        if(!match) return res.json({ok:false,message:'wrong data'}); //wrong password 
-
-        delete Item.password;
-
-        res.json({ok:true,Item})
+        if(Item) return res.json({ok:false,message:'email has been registered'}); //wrong email
     });
-});
+    //-------------/verify if email is already in database
 
-//Get one user by autentication of google (Auth0)
-router.get('/loggin',(req,res)=>{
-    res.json({ok:true})
-});
-
-
-//Create new user by email and password manually
-router.post('/users',async (req,res)=>{
-    const {email,name,username,password} = req.body;
-
-    const tableName = 'users';
-
+    
     const encoded = await bcrypt.hash(password,Number(process.env.SALTROUNDS));
 
-    var params ={
+    var paramsPut ={
         TableName:tableName,
         Item:{
             "email":email, //Primary partition key (id)
-            "username":username, //Primary sort key
+            "username":username,
             "name":name,
             "password":encoded,
             "imgProfile":'',
+            "autentication":'normal',
             "phoneNumber":''
         }
     }
-    dynamoClient.put(params,(err,data)=>{
+    dynamoClient.put(paramsPut,(err,data)=>{
         if(err)return res.json({ok:false,message:"user can't be saved"});
 
         res.json({ok:true,message:'user saved successfully!!!'});
+    });
+});
+
+//Create new user by google autentication
+router.post('/signup-google',(req,res)=>{
+    const {accesstoken} = req.headers;
+    let verifyToken = `https://www.googleapis.com/oauth2/v3/tokeninfo?id_token=${accesstoken}`;
+    axios.get(verifyToken)
+    .then(data=>{
+        
+        const {email,name,picture} = data.data;
+        const user = {email,name,picture};
+        //-------------verify if email is already in database
+        const paramsGet = {
+            TableName:tableName,
+            Key:{
+                "email":email
+            }
+        }
+        dynamoClient.get(paramsGet,async (err,data)=>{
+            if(err) return res.json({ok:false});
+            const {Item} = data;
+            if(Item) return res.json({ok:false,message:'email has been registered'}); //wrong email
+        });
+        //-------------/verify if email is already in database
+
+
+        //saving in dynamodb
+        const tableName = 'users';
+        var params ={
+            TableName:tableName,
+            Item:{
+                "email":email, //Primary partition key (id)
+                "username":name,
+                "name":name,
+                "imgProfile":picture,
+                "autentication":'google',
+                "phoneNumber":''
+            }
+        }
+
+        dynamoClient.put(params,(err,data)=>{
+            if(err)return res.json({ok:false,message:"user can't be loggin with that google account"});
+    
+            res.json({ok:true,message:'user saved successfully!!!',user});
+        });
+
     })
+    .catch(e=>{
+        res.json({ok:false});
+        console.log(e)
+    });    
 });
 
 //Create new user by autentication of google (Auth0)
@@ -91,4 +114,3 @@ router.delete('/users',(req,res)=>{
 });
 
 module.exports = router;
-//5f4075cd81474a2528192d61
