@@ -14,17 +14,17 @@ app.use(express.json());
 app.use(require('./routes/index.routes.js'));
 
 //--------------------------MongoDb----------------------------------
-const URLMONGO = `mongodb+srv://${process.env.USERMONGODB}:${process.env.PASSWORDMONGODB}@cluster0.qep1s.mongodb.net/${process.env.NAMEDATABASEMDB}?retryWrites=true&w=majority`;
+// const URLMONGO = `mongodb+srv://${process.env.USERMONGODB}:${process.env.PASSWORDMONGODB}@cluster0.qep1s.mongodb.net/${process.env.NAMEDATABASEMDB}?retryWrites=true&w=majority`;
 
-const optionsMongoose = {
-    useUnifiedTopology: true,
-    useNewUrlParser: true 
-}
+// const optionsMongoose = {
+//     useUnifiedTopology: true,
+//     useNewUrlParser: true 
+// }
 
-mongoose.connect(URLMONGO,optionsMongoose,err=>{
-    if(err) throw 'Database Access Denied';
-    console.log('Database online');
-});
+// mongoose.connect(URLMONGO,optionsMongoose,err=>{
+//     if(err) throw 'Database Access Denied';
+//     console.log('Database online');
+// });
 
 //--------------------------Cofig port-------------------------------
 const port = process.env.PORT || 5000;

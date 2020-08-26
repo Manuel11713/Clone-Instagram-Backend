@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcrypt');
 const axios = require('axios');
-const UserSModel = require('../Models/UsersModel');
+//const UserSModel = require('../Models/UsersModel');
 const AWS = require('aws-sdk');
 const dynamoClient = new AWS.DynamoDB.DocumentClient();
 
