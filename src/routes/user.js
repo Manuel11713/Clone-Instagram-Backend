@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcrypt');
 const axios = require('axios');
+const jwt = require('jsonwebtoken');
 //const UserSModel = require('../Models/UsersModel');
 const AWS = require('aws-sdk');
 const dynamoClient = new AWS.DynamoDB.DocumentClient();
@@ -22,30 +23,33 @@ router.post('/signup-users',async (req,res)=>{
     dynamoClient.get(paramsGet,async (err,data)=>{
         if(err) return res.json({ok:false});
         const {Item} = data;
-
         if(Item) return res.json({ok:false,message:'email has been registered'}); //wrong email
-    });
-    //-------------/verify if email is already in database
 
-    
-    const encoded = await bcrypt.hash(password,Number(process.env.SALTROUNDS));
+        const encoded = await bcrypt.hash(password,Number(process.env.SALTROUNDS));
 
-    var paramsPut ={
-        TableName:tableName,
-        Item:{
-            "email":email, //Primary partition key (id)
-            "username":username,
-            "name":name,
-            "password":encoded,
-            "imgProfile":'',
-            "autentication":'normal',
-            "phoneNumber":''
+        var paramsPut ={
+            TableName:tableName,
+            Item:{
+                "email":email, //Primary partition key (id)
+                "username":username,
+                "name":name,
+                "password":encoded,
+                "imgProfile":'',
+                "autentication":'normal',
+                "phoneNumber":''
+            }
         }
-    }
-    dynamoClient.put(paramsPut,(err,data)=>{
-        if(err)return res.json({ok:false,message:"user can't be saved"});
-
-        res.json({ok:true,message:'user saved successfully!!!'});
+        dynamoClient.put(paramsPut,async(err,data)=>{
+            if(err)return res.json({ok:false,message:"user can't be saved"});
+            let user = {
+                name,
+                email,
+                username
+            }
+            const token = await jwt.sign(user,process.env.JWTSECRET,{expiresIn:'3d'});
+            
+            res.json({ok:true,message:'user saved successfully!!!',user,token});
+        });
     });
 });
 
