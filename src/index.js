@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const app = express();
 const mongoose = require('mongoose');
+var cors = require('cors')
 
 //--------------------------SDK AWS--------------------
 const AWS = require('aws-sdk');
@@ -9,6 +10,7 @@ AWS.config.update({region:'us-east-1'});
 
 //--------------------------MiddleWares----------------------------
 app.use(express.json());
+app.use(cors());
 
 //--------------------------Routing----------------------------------
 app.use(require('./routes/index.routes.js'));
