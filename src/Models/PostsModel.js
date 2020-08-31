@@ -1,29 +1,28 @@
 const AWS = require('aws-sdk');
-const s3 = new AWS.S3();
+const { v4: uuidv4 } = require('uuid');
 const dynamoClient = new AWS.DynamoDB.DocumentClient();
 
 class PostModel{
-    constructor(description,likes,comments,imgLink){
+    constructor(description,fileLink){
         this.description = description;
-        this.likes = likes;
-        this.comments = comments;
-        this.imgLink = imgLink;
+        this.fileLink = fileLink;
+        this.tablename='posts';
     };
-    save(){
-
-    }
-    find(email,callback){
-        const tablename = 'users';
-        params={
-            TableName:tablename,
-            Key:{
-                "email":email
+    async save(){
+        let id = uuidv4();
+        const paramsPut = {
+            TableName:this.tablename,
+            Item:{
+                "id":id,
+                "fileLink":this.fileLink,
+                "description":this.description,
+                "comments":[],
+                "shared":[],
+                "likes":[]
             }
         }
-
-
-        
-
-        //if(callback)
+        const data = await dynamoClient.put(paramsPut).promise();
+        if(data)return id;
     }
 }
+module.exports = PostModel;

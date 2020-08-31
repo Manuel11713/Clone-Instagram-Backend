@@ -17,13 +17,14 @@ router.get('/loggin',(req,res)=>{
         
         if(!match) return res.json({ok:false,message:'wrong data'}); //wrong password 
         
-        const user = {
-            name:Item.name,
-            username:Item.username,
-            email:Item.email,
-            imgProfile:Item.imgProfile
-        }
-        const token = UserModel.tokenization(user); 
+        // const user = {
+        //     name:Item.name,
+        //     username:Item.username,
+        //     email:Item.email,
+        //     imgProfile:Item.imgProfile
+        // }
+        const user = Item;
+        const token = UserModel.tokenization(Item); 
 
         res.json({ok:true,user,token});
     });
@@ -36,13 +37,12 @@ router.post('/loggin-google',(req,res)=>{
     axios.get(verifyToken)
     .then(async data=>{
         const {email,name,picture} = data.data;
-        const user = {email,name,imgProfile:picture,username:name};
-
-        const token = UserModel.tokenization(user);
-        
-        res.json({ok:true,user,token});
-        
-        UserModel.findByEmail(email,(err,Item)=>{
+                
+        UserModel.findByEmail(email,async (err,Item)=>{
+            const user = Item;
+            const token = await UserModel.tokenization(user);        
+            res.json({ok:true,user,token});
+            
             if(err) return console.log(err);
             if(Item) return console.log('user already in db'); 
 
@@ -59,16 +59,15 @@ router.post('/loggin-google',(req,res)=>{
 });
 
 
+
 router.get('/verify-token',(req,res)=>{
     const {authorization} = req.headers;
     let valid = verifyToken(authorization);
     if(!valid) return res.json({ok:false,message:'invalid token please signup'});
-    let user = {
-        name:valid.name,
-        username:valid.username,
-        imgProfile:valid.imgProfile,
-        email:valid.email
-    }
+    delete valid.exp;
+    delete valid.iat;
+    let user = valid;
+
     res.json({ok:true,user})    
 });
 

@@ -1,14 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-const AWS = require('aws-sdk');
-const UserModel = require('../Models/UserModel');
 const multer = require('multer');
 var storage = multer.memoryStorage();
 var upload = multer({ storage: storage });
-const dynamoClient = new AWS.DynamoDB.DocumentClient();
-const s3 = new AWS.S3();
+const UserModel = require('../Models/UserModel');
+
 
 //Create new user by email and password manually
 router.post('/signup-users',async (req,res)=>{
@@ -28,38 +24,11 @@ router.post('/signup-users',async (req,res)=>{
     }); 
 });       
 
-// router.post('/upload-post',upload.single('newPost'),(req,res)=>{
-//     console.log(req.file);
-//     const email = req.body.email;
-//     const params = {
-//         Bucket:'bucketforclonogram',
-//         Key:req.file.originalname,
-//         Body:req.file.buffer,
-//         ACL: 'public-read'//hacer publico
-//     }
-//     s3.upload(params,(err,dataS3)=>{
-//         if(err){console.log(err);return res.json({ok:false,message:'klsdf'})}
-//         Location
-
-//         const tableName = 'users';
-//         console.log(email)
-//         const params = {
-//             TableName:tableName,
-//             Key:{
-//                 'email':email
-//             }
-//         };
-
-//         dynamoClient.get(params,(err,dataDy)=>{
-
-//             if(err)return console.log(err);
-//             res.json({ok:true,dataS3,dataDy});
-//         });
-//     });
-// });
-
-
-
+router.put('/upload-post',upload.single('newPost'),async(req,res)=>{
+    const {email,description} = req.body;
+    //await UserModel.makePost(req.file.buffer,req.file.originalname,email,description);
+    res.json({ok:true})
+});
 router.put('/users',(req,res)=>{
 
 });
