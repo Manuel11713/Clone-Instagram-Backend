@@ -1,43 +1,31 @@
 const express = require('express');
 const router = express.Router();
-const jwt = require('jsonwebtoken');
+const UserModel = require('../Models/UserModel');
 const axios = require('axios');
-const AWS = require('aws-sdk');
-const bcrypt = require('bcrypt');
-const dynamoClient = new AWS.DynamoDB.DocumentClient();
 
 const {verifyToken} = require('../helpers/verfifyToken');
 
 //Get one user by email and password
 router.get('/loggin',(req,res)=>{
     const {email,password} = req.body;
-    const tableName = 'users';
-
-    const params = {
-        TableName:tableName,
-        Key:{
-            "email":email
-        }
-    }
-    dynamoClient.get(params,async (err,data)=>{
-        console.time('getDynamo');
-
-        if(err) return res.json({ok:false});
-        const {Item} = data;
-
+    UserModel.findByEmail(email,(err,Item)=>{
+        if(err)return res.json({ok:false,message:'Error 404'});
         if(!Item) return res.json({ok:false,message:'wrong data'}); //wrong email
-        
-        const match = await bcrypt.compare(password,Item.password);
+        if(Item.autentication==='google')return res.json({ok:false,message:'This account is logged via google'});
+
+        const match = UserModel.compare(password,Item.password);
         
         if(!match) return res.json({ok:false,message:'wrong data'}); //wrong password 
         
-        delete Item.password;
-        
-        const token = await jwt.sign(Item,process.env.JWTSECRET,{expiresIn:'3d'});
+        const user = {
+            name:Item.name,
+            username:Item.username,
+            email:Item.email,
+            imgProfile:Item.imgProfile
+        }
+        const token = UserModel.tokenization(user); 
 
-        res.json({ok:true,Item,token});
-        console.timeEnd('getDynamo');
-
+        res.json({ok:true,user,token});
     });
 });
 
@@ -49,44 +37,23 @@ router.post('/loggin-google',(req,res)=>{
     .then(async data=>{
         const {email,name,picture} = data.data;
         const user = {email,name,imgProfile:picture,username:name};
-        const token = await jwt.sign(user,process.env.JWTSECRET,{expiresIn:'3d'});
+
+        const token = UserModel.tokenization(user);
         
         res.json({ok:true,user,token});
         
-        const tableName = 'users';
-        
-        //-------------verify if email is already in database
-        const paramsGet = {
-            TableName:tableName,
-            Key:{
-                "email":email
-            }
-        }
-        dynamoClient.get(paramsGet,async (err,data)=>{
+        UserModel.findByEmail(email,(err,Item)=>{
             if(err) return console.log(err);
-            const {Item} = data;
             if(Item) return console.log('user already in db'); 
-        
-        
-            //--------------saving in dynamodb
-            var params ={
-                TableName:tableName,
-                Item:{
-                    "email":email, //Primary partition key (id)
-                    "username":name,
-                    "name":name,
-                    "imgProfile":picture,
-                    "autentication":'google',
-                    "phoneNumber":''
-                }
-            }
-            dynamoClient.put(params,(err,data)=>{
-                if(err)return console.log(err);
-                console.log('user saved!!!')
+
+            const newUser = new UserModel(email,name,name,'','google');
+            newUser.save((err,data)=>{
+                if(err)console.log(err);
             });
         });
     })
     .catch(e=>{
+        res.json({ok:false});
         console.log(e);
     });    
 });
@@ -104,8 +71,6 @@ router.get('/verify-token',(req,res)=>{
     }
     res.json({ok:true,user})    
 });
-
-
 
 
 module.exports = router;
