@@ -26,14 +26,13 @@ router.post('/signup-users',async (req,res)=>{
 
 router.put('/upload-post',upload.single('newPost'),async(req,res)=>{
     const {email,description} = req.body;
-    let posts = await UserModel.makePost(req.file.buffer,req.file.originalname,email,description);
-    console.log(posts);
-    res.json({ok:true,posts});
+    let user = await UserModel.makePost(req.file.buffer,req.file.originalname,email,description);
+    const token = await UserModel.tokenization(user);
+    res.json({ok:true,posts:user.posts,token});
     
 });
 router.post('/posts',async(req,res)=>{
     const {postsID} = req.body;
-    console.log(req.body);
     const posts = await PostModel.getPosts(postsID);
     res.json({ok:true,posts})
 });

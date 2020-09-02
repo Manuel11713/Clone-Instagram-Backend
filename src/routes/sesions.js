@@ -8,21 +8,16 @@ const {verifyToken} = require('../helpers/verfifyToken');
 //Get one user by email and password
 router.post('/loggin',(req,res)=>{
     const {email,password} = req.body;
-    UserModel.findByEmail(email,(err,Item)=>{
+    UserModel.findByEmail(email,async(err,Item)=>{
         if(err)return res.json({ok:false,message:'Error 404'});
         if(!Item) return res.json({ok:false,message:'wrong data'}); //wrong email
-        if(Item.autentication==='google')return res.json({ok:false,message:'This account is logged via google'});
-
-        const match = UserModel.compare(password,Item.password);
+        if(Item.authentication==='google')return res.json({ok:false,message:'This account is logged via google'});
         
+        const match = await UserModel.compare(password,Item.password);
+        delete Item.password;//delete password after using
+
         if(!match) return res.json({ok:false,message:'wrong data'}); //wrong password 
         
-        // const user = {
-        //     name:Item.name,
-        //     username:Item.username,
-        //     email:Item.email,
-        //     imgProfile:Item.imgProfile
-        // }
         const user = Item;
         const token = UserModel.tokenization(Item); 
 
@@ -33,6 +28,7 @@ router.post('/loggin',(req,res)=>{
 //Create new user by google autentication
 router.post('/loggin-google',(req,res)=>{
     const {idtoken} = req.headers;
+    console.log(idtoken)
     let verifyToken = `https://www.googleapis.com/oauth2/v3/tokeninfo?id_token=${idtoken}`;
     axios.get(verifyToken)
     .then(async data=>{
@@ -40,6 +36,7 @@ router.post('/loggin-google',(req,res)=>{
                 
         UserModel.findByEmail(email,async (err,Item)=>{
             const user = Item;
+            delete user.password;
             const token = await UserModel.tokenization(user);        
             res.json({ok:true,user,token});
             
@@ -54,7 +51,7 @@ router.post('/loggin-google',(req,res)=>{
     })
     .catch(e=>{
         res.json({ok:false});
-        console.log(e);
+        //console.log(e);
     });    
 });
 

@@ -23,7 +23,7 @@ class PostModel{
         }
         try{
             const data = await dynamoClient.put(paramsPut).promise();
-            console.log('data',data)
+            //console.log('data',data)
             if(data)return id;
         }catch(e){
             console.log('error en post model',e);

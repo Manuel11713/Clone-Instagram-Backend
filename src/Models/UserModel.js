@@ -40,7 +40,7 @@ class UserModel{
                 imgProfile:''
             }
             
-            const token = this.tokenization(user);
+            const token = await UserModel.tokenization(user);
             cb(null,{user,token});
         });
     }
@@ -62,24 +62,26 @@ class UserModel{
                     'email':email
                 }
             };
-            console.log('dataS3',dataS3);
+            //console.log('dataS3',dataS3);
             //------------Get Uset-------------------
             const dataDy = await dynamoClient.get(paramsGet).promise();
-            console.log('dataDy',dataDy)
+            //console.log('dataDy',dataDy)
             const {Item} = dataDy;
             //------------Make post and update user´s data----------
             const newPost = new PostModel(description,dataS3.Location);
             const id = await newPost.save();
-            console.log('id',id);
+            //console.log('id',id);
             Item.posts.unshift(id);
             const paramsPut = {
                 TableName:tablename,
                 Item
             }
-            console.log('Item',Item);
+            //console.log('Item',Item);
             await dynamoClient.put(paramsPut).promise();
-            console.log('return');
-            return Item.posts;
+            //console.log('return');
+            //return Item.posts;
+            delete Item.password;
+            return Item;
         }catch(e){
             console.log('error in user model',e);
         }
@@ -104,7 +106,6 @@ class UserModel{
             if(err)return cb(err);
             const {Item} = data;
             if(!Item)return cb(null,null);
-            delete Item.password;
             cb(null,Item);
         });
     }
