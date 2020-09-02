@@ -21,8 +21,29 @@ class PostModel{
                 "likes":[]
             }
         }
-        const data = await dynamoClient.put(paramsPut).promise();
-        if(data)return id;
+        try{
+            const data = await dynamoClient.put(paramsPut).promise();
+            console.log('data',data)
+            if(data)return id;
+        }catch(e){
+            console.log('error en post model',e);
+        }
+    }
+    static async getPosts(postsID){
+        const Keys = postsID.map(id=>{
+            return{
+                id
+            }
+        });
+        var params = {
+            RequestItems: {
+                'posts': {
+                Keys
+                }
+            }
+        };
+        const data = await dynamoClient.batchGet(params).promise();
+        return data.Responses.posts;
     }
 }
 module.exports = PostModel;

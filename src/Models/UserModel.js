@@ -52,26 +52,37 @@ class UserModel{
             Body:file,
             ACL: 'public-read'//make Public
         }
-        const dataS3 = await s3.upload(paramsS3).promise();
-        const tablename='users';
-        const paramsGet = {
-            TableName:tablename,
-            Key:{
-                'email':email
+        try{
+
+            const dataS3 = await s3.upload(paramsS3).promise();
+            const tablename='users';
+            const paramsGet = {
+                TableName:tablename,
+                Key:{
+                    'email':email
+                }
+            };
+            console.log('dataS3',dataS3);
+            //------------Get Uset-------------------
+            const dataDy = await dynamoClient.get(paramsGet).promise();
+            console.log('dataDy',dataDy)
+            const {Item} = dataDy;
+            //------------Make post and update user´s data----------
+            const newPost = new PostModel(description,dataS3.Location);
+            const id = await newPost.save();
+            console.log('id',id);
+            Item.posts.unshift(id);
+            const paramsPut = {
+                TableName:tablename,
+                Item
             }
-        };
-        //------------Get Uset-------------------
-        const dataDy = await dynamoClient.get(paramsGet).promise();
-        const {Item} = dataDy;
-        //------------Make post and update user´s data----------
-        const newPost = new PostModel(description,dataS3.Location);
-        const id = await newPost.save();
-        Item.posts.unshift(id);
-        const paramsPut = {
-            TableName:tablename,
-            Item
+            console.log('Item',Item);
+            await dynamoClient.put(paramsPut).promise();
+            console.log('return');
+            return Item.posts;
+        }catch(e){
+            console.log('error in user model',e);
         }
-        await dynamoClient.put(paramsPut).promise();
     }
     static async tokenization(user){
         const token = await jwt.sign(user,process.env.JWTSECRET,{expiresIn:'3d'});

@@ -6,7 +6,7 @@ const axios = require('axios');
 const {verifyToken} = require('../helpers/verfifyToken');
 
 //Get one user by email and password
-router.get('/loggin',(req,res)=>{
+router.post('/loggin',(req,res)=>{
     const {email,password} = req.body;
     UserModel.findByEmail(email,(err,Item)=>{
         if(err)return res.json({ok:false,message:'Error 404'});

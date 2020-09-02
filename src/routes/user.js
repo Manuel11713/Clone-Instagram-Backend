@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
+const PostModel = require('../Models/PostsModel');
 var storage = multer.memoryStorage();
 var upload = multer({ storage: storage });
 const UserModel = require('../Models/UserModel');
-
 
 //Create new user by email and password manually
 router.post('/signup-users',async (req,res)=>{
@@ -26,11 +26,16 @@ router.post('/signup-users',async (req,res)=>{
 
 router.put('/upload-post',upload.single('newPost'),async(req,res)=>{
     const {email,description} = req.body;
-    //await UserModel.makePost(req.file.buffer,req.file.originalname,email,description);
-    res.json({ok:true})
+    let posts = await UserModel.makePost(req.file.buffer,req.file.originalname,email,description);
+    console.log(posts);
+    res.json({ok:true,posts});
+    
 });
-router.put('/users',(req,res)=>{
-
+router.post('/posts',async(req,res)=>{
+    const {postsID} = req.body;
+    console.log(req.body);
+    const posts = await PostModel.getPosts(postsID);
+    res.json({ok:true,posts})
 });
 
 router.delete('/users',(req,res)=>{
